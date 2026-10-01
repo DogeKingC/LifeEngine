@@ -35,8 +35,10 @@ The simulation runs in a Web Worker so it never competes with drawing or input:
 - `src/Sim/SimWorld.js` is the simulation core. The grid is stored in typed arrays (state, owner, body-cell index) and
   organisms share immutable `Genome`s (`src/Sim/Genome.js`) until a mutation creates a new one.
 - `src/Sim/SimHost.js` runs the tick loop and answers messages; `src/Sim/sim.worker.js` hosts it in the worker.
-- `src/Sim/SimClient.js` is the main-thread side. If a worker can't be created (for example when `index.html` is opened
-  from `file://`), it runs the same host on the main thread instead, which is slower but otherwise identical.
+- The build bundles the worker first (into `build/`) and embeds it in `dist/js/bundle.js`, which starts it from a Blob
+  URL. The game stays a single script and the worker also runs when `index.html` is opened from `file://`.
+- `src/Sim/SimClient.js` is the main-thread side. If the worker can't be started at all, it runs the same host on the
+  main thread instead, which is slower but otherwise identical.
 - `src/Environments/WorldEnvironment.js` forwards UI actions to the worker and draws the per-frame snapshots it sends back
   (`src/Rendering/WorldRenderer.js` redraws only changed cells).
 - The organism editor still uses the original object-based classes in `src/Organism`. Organisms move between the editor

@@ -18,7 +18,8 @@
 
 ### Simulation Engine Rewrite:
 - The simulation now runs in a Web Worker, so drawing and input never slow it down and the page stays at 60 fps even
-  when the simulation is saturated (falls back to the main thread when opened from file://)
+  when the simulation is saturated. The worker is embedded in bundle.js (still a single script to deploy) and also
+  runs when the page is opened from file://; if a worker can't start, the simulation falls back to the main thread
 - New data-oriented core (`src/Sim`): typed-array grid and shared immutable genomes. 1.3-3.4x faster per tick than the
   previous version in Node; at MAX speed in the browser, roughly 5-11x more ticks/sec on the default and Food Chain
   worlds and ~1.7x on the 15k-organism battleground world

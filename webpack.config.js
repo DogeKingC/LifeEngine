@@ -1,14 +1,32 @@
 const path = require('path');
 const webpack = require("webpack");
 
-module.exports = {
+// Two builds. The simulation worker is bundled first, then embedded into
+// dist/js/bundle.js as a string and started from a Blob URL. That keeps the
+// game a single script and lets the worker start even when index.html is opened
+// from file:// (where browsers refuse to load worker scripts by path).
+const worker = {
+    name: 'worker',
+    target: 'webworker',
+    entry: './src/Sim/sim.worker.js',
+    output: {
+        filename: 'sim.worker.js',
+        path: path.resolve(__dirname, 'build/'),
+    },
+};
+
+const main = {
+    name: 'main',
+    dependencies: ['worker'],
     entry: './src/index.js',
     output: {
         filename: 'bundle.js',
-        // the simulation Web Worker (src/Sim/sim.worker.js) is emitted as its own file
-        chunkFilename: '[name].bundle.js',
         path: path.resolve(__dirname, 'dist/js/'),
-        publicPath: 'auto',
+    },
+    module: {
+        rules: [
+            { test: /build[\\/]sim\.worker\.js$/, type: 'asset/source' },
+        ],
     },
     plugins: [
         new webpack.ProvidePlugin({
@@ -16,3 +34,5 @@ module.exports = {
         })
     ]
 };
+
+module.exports = [worker, main];
