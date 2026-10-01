@@ -128,7 +128,7 @@ class WorldEnvironment extends Environment{
         var cell = this.grid_map.cellAt(c, r);
         if (cell === null)
             return;
-        cell.state = state;
+        cell.setType(state);
         cell.cell_owner = owner;
         cell.owner = owner != null ? owner.org : null;
         this.renderer.addToRender(cell);
@@ -148,6 +148,7 @@ class WorldEnvironment extends Environment{
         for (var org of this.organisms)
             org.die();
         this.organisms = [];
+        this.total_mutability = 0;
     }
     
     clearDeadOrganisms() {
@@ -251,12 +252,25 @@ class WorldEnvironment extends Environment{
             s.name = orgRaw.species_name;
             org.species = s;
         }
+        // Saved populations can disagree with the organisms actually in the file
+        // (dead organisms, older versions), which later produces negative
+        // populations. Recount from the loaded organisms.
         for (let name in species)
-            FossilRecord.addSpeciesObj(species[name]);
+            species[name].population = 0;
+        for (let org of this.organisms)
+            org.species.population++;
+        for (let name in species) {
+            if (species[name].population > 0)
+                FossilRecord.addSpeciesObj(species[name]);
+        }
         FossilRecord.loadRaw(env.fossil_record);
         SerializeHelper.overwriteNonObjects(env, this);
-        if ($('#override-controls').is(':checked'))
+        if ($('#override-controls').is(':checked')) {
             Hyperparams.loadJsonObj(env.controls)
+            // worlds saved before healer/camo existed keep their original rules
+            if (env.controls && env.controls.extendedCellTypes === undefined)
+                Hyperparams.extendedCellTypes = false;
+        }
         this.renderer.renderFullGrid(this.grid_map.grid);
     }
 }

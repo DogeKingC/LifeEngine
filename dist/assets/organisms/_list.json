@@ -16,6 +16,11 @@
         "value": "shark"
     },
     {
+        "name": "Ghost",
+        "value": "ghost",
+        "subname": "camo + healer"
+    },
+    {
         "name": "Ball",
         "value": "Ball"
     },

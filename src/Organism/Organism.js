@@ -232,15 +232,17 @@ class Organism {
     isClear(col, row, rotation=this.rotation) {
         var offsets = this.anatomy.getRotatedOffsets(rotation);
         var grid_map = this.env.grid_map;
+        var state_ids = grid_map.state_ids;
+        var empty_id = CellStates.empty.id;
+        var food_id = CellStates.food.id;
         var food_passable = !Hyperparams.foodBlocksReproduction;
         for (var i = 0; i < offsets.length; i += 2) {
-            var cell = grid_map.cellAt(col + offsets[i], row + offsets[i+1]);
-            if (cell==null) {
+            var idx = grid_map.indexOf(col + offsets[i], row + offsets[i+1]);
+            if (idx === -1)
                 return false;
-            }
-            if (cell.owner==this || cell.state==CellStates.empty || (food_passable && cell.state==CellStates.food)){
+            var id = state_ids[idx];
+            if (id === empty_id || (food_passable && id === food_id) || grid_map.flat[idx].owner == this)
                 continue;
-            }
             return false;
         }
         return true;
@@ -254,6 +256,8 @@ class Organism {
     }
 
     die() {
+        if (!this.living)
+            return; // dying twice would decrement the species population twice
         this.fillBody(CellStates.food);
         this.species.decreasePop();
         this.living = false;
@@ -284,6 +288,7 @@ class Organism {
         if (this.food_collected >= this.foodNeeded()) {
             this.reproduce();
         }
+        this.brain.clearObservations();
         var active = this.anatomy.getActiveCells();
         for (var i = 0; i < active.length; i++) {
             active[i].performFunction();

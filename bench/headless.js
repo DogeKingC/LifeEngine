@@ -1,5 +1,5 @@
 // Headless harness: runs the real simulation code in Node with a stubbed DOM.
-// Usage: node bench/headless.js [--ticks N] [--cols C] [--rows R] [--seed S] [--world path.json] [--org path.json]
+// Usage: node bench/headless.js [--ticks N] [--cols C] [--rows R] [--seed S] [--world path.json] [--org path.json] [--render] [--classic]
 // Prints timing plus a deterministic state hash (same seed => same hash) so
 // optimizations can be checked for behavioral equivalence.
 
@@ -15,6 +15,7 @@ const SEED = parseInt(opt('seed', '1'));
 const WORLD = opt('world', null);
 const ORG = opt('org', null);
 const RENDER = args.includes('--render');
+const CLASSIC = args.includes('--classic'); // only the original six cell types
 
 // deterministic PRNG (mulberry32) replacing Math.random
 let s = SEED >>> 0;
@@ -34,6 +35,7 @@ const WorldConfig = require('../src/WorldConfig');
 const fs = require('fs');
 
 WorldConfig.headless = !RENDER;
+require('../src/Hyperparameters').extendedCellTypes = !CLASSIC;
 const env = new WorldEnvironment(5);
 if (WORLD) {
     env.loadRaw(JSON.parse(fs.readFileSync(WORLD, 'utf8')));

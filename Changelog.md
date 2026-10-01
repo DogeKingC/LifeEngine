@@ -16,7 +16,24 @@
 - Fixed stats chart intervals stacking when reopening the stats tab
 - Added headless benchmark (`npm run bench`)
 
+### Simulation Accuracy:
+- Eyes/brains only act on what was seen this tick. Previously sightings piled up while the brain was being ignored
+  (and forever on non-moving organisms with eyes) and stale ones could drive later decisions
+- "Nothing seen" no longer counts as a sighting at max range that could mask a real one
+- An organism can no longer die twice (with one touch kill, killer-vs-killer hits double-counted deaths and drove
+  species populations negative)
+- Species populations are recounted from the organisms when loading a world (fixes "fossilize non existing species")
+- Numeric evolution controls are parsed as numbers (several were stored as strings, e.g. look range + 1 = "201")
+- Clearing organisms resets the average mutation statistic
+- Random organism generator: fixed missing cell on the right edge of each layer and early stop logic
+
+### New Cell Types:
+- Healer: chance each tick to repair 1 damage (configurable)
+- Camo: organism becomes invisible to other organisms' eyes
+- Both can be disabled in Evolution Controls; old worlds load with them disabled
+
 ### New Content:
+- Organism: Ghost (camouflaged, self-healing predator)
 - Organisms: Thornbush, Coral (plants), Grazer (food-seeking herbivore), Shark (eyed predator)
 - World: Food Chain (plants, grazers and sharks in three wall-separated regions)
 

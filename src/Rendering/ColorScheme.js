@@ -10,6 +10,8 @@ var color_scheme = {
     "killer":"#F82380",
     "armor":"#7230DB",
     "eye":"#B6C1EA",
+    "healer":"#F2F2F2",
+    "camo":"#6B7A2F",
     "eye-slit": "#0E1318"
 }
 

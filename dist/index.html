@@ -61,6 +61,8 @@
 							<div class='cell-legend-type' id='killer' title="Killer: Harms organisms in adjacent cells."></div>
 							<div class='cell-legend-type' id='armor' title="Armor: Negates affects of killer cell."></div>
 							<div class='cell-legend-type' id='eye' title="Eye: Observes cells and decides movement."></div>
+							<div class='cell-legend-type' id='healer' title="Healer: Has a chance each tick to repair 1 damage on its organism."></div>
+							<div class='cell-legend-type' id='camo' title="Camo: Makes its organism invisible to other organisms' eyes."></div>
 							<div class='cell-legend-type' id='food' title="Food: Not part of an organism. Once an organism has eaten enough food, it will reproduce."></div>
 							<div class='cell-legend-type' id='wall' title="Wall: Not part of an organism. Blocks movement and reproduction."></div>
 						</div><br>
@@ -100,6 +102,10 @@
 								<div class='cell-type' id='killer' title="Killer: Harms organisms in adjacent cells."></div>
 								<div class='cell-type' id='armor' title="Armor: Negates affects of killer cell."></div>
 								<div class='cell-type' id='eye' title="Eye: Looks for cells to move away from or towards. Click again on a placed cell to rotate"></div>
+							</div>
+							<div style='grid-column: 3;'>
+								<div class='cell-type' id='healer' title="Healer: Has a chance each tick to repair 1 damage on its organism."></div>
+								<div class='cell-type' id='camo' title="Camo: Makes its organism invisible to other organisms' eyes."></div>
 							</div>
 
 							<button id='clear-editor'>Clear</button>
@@ -151,6 +157,7 @@
 									<option value="killer">killer</option>
 									<option value="armor">armor</option>
 									<option value="eye">eye</option>
+									<option value="healer">healer</option>
 								</select>
 
 								<label for="reaction-edit">Reaction: </label>
@@ -234,6 +241,12 @@
 						<br>
 						<label for="extra-mover-cost" title='Additional food cost for movers to reproduce'>Extra mover reproduction cost:</label>
 						<input type="number" id="extra-mover-cost" value=0 max="1000" step="1">
+						<br>
+						<label for="extended-cells" title='When on, mutation and random generation can produce healer and camo cells. Turn off for the classic six cell types.'>Healer &amp; camo cells evolve</label>
+						<input type="checkbox" id="extended-cells" checked>
+						<br>
+						<label for="heal-prob" title='Probability (%) each tick that a healer cell repairs 1 point of damage on its organism.'>Healer repair chance:</label>
+						<input type="number" id="heal-prob" min="0" max="100" value=10 step="1">
 
 						
 					</div>

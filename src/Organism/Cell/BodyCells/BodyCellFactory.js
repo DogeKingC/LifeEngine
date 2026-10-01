@@ -4,6 +4,8 @@ const MoverCell = require("./MoverCell");
 const KillerCell = require("./KillerCell");
 const ArmorCell = require("./ArmorCell");
 const EyeCell = require("./EyeCell");
+const HealerCell = require("./HealerCell");
+const CamoCell = require("./CamoCell");
 const CellStates = require("../CellStates");
 
 
@@ -16,6 +18,8 @@ const BodyCellFactory = {
         type_map[CellStates.killer.name] = KillerCell;
         type_map[CellStates.armor.name] = ArmorCell;
         type_map[CellStates.eye.name] = EyeCell;
+        type_map[CellStates.healer.name] = HealerCell;
+        type_map[CellStates.camo.name] = CamoCell;
         this.type_map = type_map;
     },
 

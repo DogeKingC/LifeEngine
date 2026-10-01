@@ -60,6 +60,10 @@ Organism Cells are only found in organisms, and cannot exist on their own in the
 - Killer - Red, harms organisms in directly adjacent cells (besides itself).
 - Armor - Purple, negates the effects of killer cells.
 - Eye - Light purple with a slit, allows the organism to see and move intelligently. See further description below.
+- Healer - White, each tick has a chance (`Healer repair chance`, default 10%) to repair 1 point of damage on its organism.
+- Camo - Olive, makes its organism invisible to other organisms' eyes: they see straight through its body.
+
+Healer and camo cells can be turned off with the `Healer & camo cells evolve` evolution control to get the classic six cell types. Worlds saved before these cells existed load with them turned off.
 
 ## Organisms
 Organisms are structures of cells that eat food, reproduce, and die.

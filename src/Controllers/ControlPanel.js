@@ -264,10 +264,10 @@ class ControlPanel {
 
     defineHyperparameterControls() {
         $('#food-prod-prob').change(function() {
-            Hyperparams.foodProdProb = $('#food-prod-prob').val();
+            Hyperparams.foodProdProb = parseFloat($('#food-prod-prob').val());
         }.bind(this));
         $('#lifespan-multiplier').change(function() {
-            Hyperparams.lifespanMultiplier = $('#lifespan-multiplier').val();
+            Hyperparams.lifespanMultiplier = parseFloat($('#lifespan-multiplier').val());
         }.bind(this));
 
         $('#rot-enabled').change(function() {
@@ -277,16 +277,22 @@ class ControlPanel {
             Hyperparams.instaKill = this.checked;
         });
         $('#look-range').change(function() {
-            Hyperparams.lookRange = $('#look-range').val();
+            Hyperparams.lookRange = parseFloat($('#look-range').val());
         });
         $('#see-through-self').change(function() {
             Hyperparams.seeThroughSelf = this.checked;
         });
         $('#food-drop-rate').change(function() {
-            Hyperparams.foodDropProb = $('#food-drop-rate').val();
+            Hyperparams.foodDropProb = parseFloat($('#food-drop-rate').val());
         });
         $('#extra-mover-cost').change(function() {
             Hyperparams.extraMoverFoodCost = parseInt($('#extra-mover-cost').val());
+        });
+        $('#extended-cells').change(function() {
+            Hyperparams.extendedCellTypes = this.checked;
+        });
+        $('#heal-prob').change(function() {
+            Hyperparams.healProb = parseFloat($('#heal-prob').val());
         });
         $('#org-limit').change(function() {
             Hyperparams.maxOrganisms = parseInt($('#org-limit').val());
@@ -309,13 +315,13 @@ class ControlPanel {
         $('.mut-prob').change( function() {
             switch(this.id){
                 case "add-prob":
-                    Hyperparams.addProb = this.value;
+                    Hyperparams.addProb = parseFloat(this.value);
                     break;
                 case "change-prob":
-                    Hyperparams.changeProb = this.value;
+                    Hyperparams.changeProb = parseFloat(this.value);
                     break;
                 case "remove-prob":
-                    Hyperparams.removeProb = this.value;
+                    Hyperparams.removeProb = parseFloat(this.value);
                     break;
             }
             $('#add-prob').val(Math.floor(Hyperparams.addProb));
@@ -377,6 +383,8 @@ class ControlPanel {
         $('#org-limit').val(Hyperparams.maxOrganisms);
         $('#look-range').val(Hyperparams.lookRange);
         $('#see-through-self').prop('checked', Hyperparams.seeThroughSelf);
+        $('#extended-cells').prop('checked', Hyperparams.extendedCellTypes);
+        $('#heal-prob').val(Hyperparams.healProb);
         $('#global-mutation').val(Hyperparams.globalMutability);
 
         if (!Hyperparams.useGlobalMutability) {

@@ -19,8 +19,8 @@ class ProducerCell extends BodyCell{
         var c = this.getRealCol() + loc[0];
         var r = this.getRealRow() + loc[1];
         var env = this.org.env;
-        var cell = env.grid_map.cellAt(c, r);
-        if (cell != null && cell.state == CellStates.empty)
+        var idx = env.grid_map.indexOf(c, r);
+        if (idx !== -1 && env.grid_map.state_ids[idx] === CellStates.empty.id)
             env.changeCell(c, r, CellStates.food, null);
     }
 }

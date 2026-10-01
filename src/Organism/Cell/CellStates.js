@@ -1,3 +1,5 @@
+const Hyperparams = require("../../Hyperparameters");
+
 // A cell state is used to differentiate type and render the cell
 class CellState{
     constructor(name) {
@@ -81,6 +83,18 @@ class Eye extends CellState {
     }
 }
 
+class Healer extends CellState {
+    constructor() {
+        super('healer');
+        this.active = true;
+    }
+}
+class Camo extends CellState {
+    constructor() {
+        super('camo');
+    }
+}
+
 const CellStates = {
     empty: new Empty(),
     food: new Food(),
@@ -91,15 +105,24 @@ const CellStates = {
     killer: new Killer(),
     armor: new Armor(),
     eye: new Eye(),
+    healer: new Healer(),
+    camo: new Camo(),
     defineLists() {
-        this.all = [this.empty, this.food, this.wall, this.mouth, this.producer, this.mover, this.killer, this.armor, this.eye]
-        this.living = [this.mouth, this.producer, this.mover, this.killer, this.armor, this.eye];
+        this.all = [this.empty, this.food, this.wall, this.mouth, this.producer, this.mover, this.killer, this.armor, this.eye, this.healer, this.camo]
+        this.classic_living = [this.mouth, this.producer, this.mover, this.killer, this.armor, this.eye];
+        this.extended_living = [this.healer, this.camo];
+        this.living = this.classic_living.concat(this.extended_living);
+        for (let i = 0; i < this.all.length; i++)
+            this.all[i].id = i; // compact id used by GridMap.state_ids
     },
     getRandomName: function() {
         return this.all[Math.floor(Math.random() * this.all.length)].name;
     },
+    // Types that mutation and random generation may produce. Healer/camo can be
+    // disabled in the evolution controls to get the classic six-cell rules.
     getRandomLivingType: function() {
-        return this.living[Math.floor(Math.random() * this.living.length)];
+        const pool = Hyperparams.extendedCellTypes ? this.living : this.classic_living;
+        return pool[Math.floor(Math.random() * pool.length)];
     }
 }
 

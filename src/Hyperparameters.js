@@ -29,11 +29,19 @@ const Hyperparams = {
         this.extraMoverFoodCost = 0;
 
         this.maxOrganisms = -1;
+
+        this.extendedCellTypes = true; // allow healer and camo cells to evolve
+        this.healProb = 10; // % chance per tick that a healer cell repairs 1 damage
     },
 
     loadJsonObj(obj) {
         for (let key in obj) {
-            this[key] = obj[key];
+            let value = obj[key];
+            // older saves stored some numeric controls as strings (e.g. "0"),
+            // which silently breaks arithmetic like lookRange + 1
+            if (typeof this[key] === 'number' && typeof value === 'string' && value.trim() !== '' && !isNaN(value))
+                value = parseFloat(value);
+            this[key] = value;
         }
     }
 }

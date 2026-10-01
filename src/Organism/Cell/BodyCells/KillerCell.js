@@ -13,6 +13,8 @@ class KillerCell extends BodyCell{
         var r = this.getRealRow();
         var neighbors = Hyperparams.killableNeighbors;
         for (var i = 0; i < neighbors.length; i++) {
+            if (!this.org.living)
+                return; // died from a killer-on-killer hit; its body is already food
             var loc = neighbors[i];
             this.killNeighbor(env.grid_map.cellAt(c+loc[0], r+loc[1]));
         }
