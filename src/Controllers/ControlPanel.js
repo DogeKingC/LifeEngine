@@ -213,17 +213,21 @@ class ControlPanel {
             let org = this.editor_controller.env.getCopyOfOrg();
             this.env_controller.dropOrganism(org, center[0], center[1])
         });
-        $('#save-env').click( () => {
+        $('#save-env').click( async () => {
             let was_running = this.engine.running;
             this.setPaused(true);
-            let env = this.engine.env.serialize();
-            let data = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(env));
-            let downloadEl = document.getElementById('download-el');
-            downloadEl.setAttribute("href", data);
-            downloadEl.setAttribute("download", $('#save-env-name').val()+".json");
-            downloadEl.click();
-            if (was_running)
-                this.setPaused(false);
+            try {
+                let json = await this.engine.env.serialize();
+                let url = URL.createObjectURL(new Blob([json], {type: 'application/json'}));
+                let downloadEl = document.getElementById('download-el');
+                downloadEl.setAttribute("href", url);
+                downloadEl.setAttribute("download", $('#save-env-name').val()+".json");
+                downloadEl.click();
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
+            } finally {
+                if (was_running)
+                    this.setPaused(false);
+            }
         });
         $('#load-env').click(() => {
             LoadController.loadJson((env)=>{
@@ -248,12 +252,17 @@ class ControlPanel {
         });
     }
 
-    loadEnv(env) {
+    async loadEnv(env) {
         if (this.tab_id == 'stats')
             this.stats_panel.stopAutoRender();
         let was_running = this.engine.running;
         this.setPaused(true);
-        this.engine.env.loadRaw(env);
+        try {
+            await this.engine.env.loadRaw(env);
+        } catch (e) {
+            console.error(e);
+            alert('Failed to load world');
+        }
         if (was_running)
             this.setPaused(false);
         this.updateHyperparamUIValues();

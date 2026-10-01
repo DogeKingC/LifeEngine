@@ -353,6 +353,18 @@ class Organism {
         return org;
     }
 
+    // Build an organism from the saved/serialized format (used to bring an
+    // organism from the simulation worker into the editor).
+    static fromRaw(raw) {
+        const Species = require("../Stats/Species");
+        const org = new Organism(0, 0, null);
+        org.loadRaw(raw);
+        org.species = new Species(org.anatomy, null, 0);
+        if (raw.species_name !== undefined)
+            org.species.name = raw.species_name;
+        return org;
+    }
+
     loadRaw(org) {
         SerializeHelper.overwriteNonObjects(org, this);
         this.anatomy.loadRaw(org.anatomy)

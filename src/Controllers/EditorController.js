@@ -85,7 +85,8 @@ class EditorController extends CanvasController{
             const new_name = $('#species-name-edit').val();
             if (new_name === '' || new_name === this.env.organism.species.name)
                 return;
-            FossilRecord.changeSpeciesName(this.env.organism.species, new_name);
+            // renames the species in the world too, if it exists there
+            this.control_panel.engine.env.renameSpecies(this.env.organism.species, new_name);
         }.bind(this));
 
         $('#move-range-edit').change ( function() {

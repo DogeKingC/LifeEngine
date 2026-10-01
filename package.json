@@ -4,7 +4,7 @@
   "description": "Version 2 of the evolution simulator",
   "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node bench/compare.js",
     "build": "webpack --mode=production",
     "build-dev": "webpack --mode=development",
     "build-watch": "webpack --watch --mode=development",

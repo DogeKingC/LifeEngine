@@ -16,6 +16,17 @@
 - Fixed stats chart intervals stacking when reopening the stats tab
 - Added headless benchmark (`npm run bench`)
 
+### Simulation Engine Rewrite:
+- The simulation now runs in a Web Worker, so drawing and input never slow it down and the page stays at 60 fps even
+  when the simulation is saturated (falls back to the main thread when opened from file://)
+- New data-oriented core (`src/Sim`): typed-array grid and shared immutable genomes. 1.3-3.4x faster per tick than the
+  previous version in Node; at MAX speed in the browser, roughly 5-11x more ticks/sec on the default and Food Chain
+  worlds and ~1.7x on the 15k-organism battleground world
+- Proven identical to the previous implementation: `npm test` runs both on the same seed and compares the final state
+- Renderer draws only cells that changed between snapshots
+- World saves are produced in the worker and downloaded as a Blob (large worlds no longer go through a data: URL)
+- Fixed stats charts hanging (infinite loop) when the chart's last tick wasn't in the record, and crashing on an empty record
+
 ### Simulation Accuracy:
 - Eyes/brains only act on what was seen this tick. Previously sightings piled up while the brain was being ignored
   (and forever on non-moving organisms with eyes) and stale ones could drive later decisions

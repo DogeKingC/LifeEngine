@@ -32,7 +32,7 @@ class ColorScheme {
             $('#'+cell_type+'.cell-legend-type').css('background-color', color_scheme[cell_type]);
             
         }
-        this.world_env.renderer.renderFullGrid(this.world_env.grid_map.grid);
+        this.world_env.renderFull();
         this.editor_env.renderer.renderFullGrid(this.editor_env.grid_map.grid);
     }
 }

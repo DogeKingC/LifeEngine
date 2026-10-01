@@ -49,10 +49,10 @@ class StatsPanel {
     }
 
     updateDetails() {
-        var org_count = this.env.organisms.length;
-        $('#org-count').text("Total Population: " + org_count);
-        $('#species-count').text("Number of Species: " + FossilRecord.numExtantSpecies());
-        let top_species = FossilRecord.getMostPopulousSpecies();
+        var stats = this.env.stats;
+        $('#org-count').text("Total Population: " + stats.orgs);
+        $('#species-count').text("Number of Species: " + stats.species);
+        let top_species = stats.top;
         if (top_species)
             $('#top-species').text("Most Populous Species: \"" + top_species.name + "\" (" + top_species.population + " organisms)");
         else    

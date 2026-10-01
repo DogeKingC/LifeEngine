@@ -171,6 +171,13 @@ const FossilRecord = {
         return record;
     },
 
+    // Main thread: replace the chart data with a copy sent by the simulation worker.
+    applyRecord(record) {
+        const keys = ['tick_record', 'pop_counts', 'species_counts', 'av_mut_rates', 'av_cells', 'av_cell_counts'];
+        for (const key of keys)
+            this[key] = record ? record[key] : [];
+    },
+
     loadRaw(record) {
         SerializeHelper.overwriteNonObjects(record, this);
         for (let key in record.records) {

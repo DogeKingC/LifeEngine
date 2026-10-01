@@ -30,6 +30,22 @@ To load custom creations (found in `/dist/assets`), you must have a simple web s
 - Watch mode (dev mode that auto-builds when you save a file): `npm run build-watch`
 - Dev mode (better error messages): `npm run build-dev` 
 
+### Architecture
+The simulation runs in a Web Worker so it never competes with drawing or input:
+- `src/Sim/SimWorld.js` is the simulation core. The grid is stored in typed arrays (state, owner, body-cell index) and
+  organisms share immutable `Genome`s (`src/Sim/Genome.js`) until a mutation creates a new one.
+- `src/Sim/SimHost.js` runs the tick loop and answers messages; `src/Sim/sim.worker.js` hosts it in the worker.
+- `src/Sim/SimClient.js` is the main-thread side. If a worker can't be created (for example when `index.html` is opened
+  from `file://`), it runs the same host on the main thread instead, which is slower but otherwise identical.
+- `src/Environments/WorldEnvironment.js` forwards UI actions to the worker and draws the per-frame snapshots it sends back
+  (`src/Rendering/WorldRenderer.js` redraws only changed cells).
+- The organism editor still uses the original object-based classes in `src/Organism`. Organisms move between the editor
+  and the world in the normal save format.
+
+### Tests
+`npm test` runs the original object-based simulation (kept in `bench/reference`) and the new `SimWorld` core side by side
+on the same random seed across several worlds and organisms, and fails unless both end in exactly the same state.
+
 ### Headless benchmark
 `npm run bench` runs the real simulation code in Node (no browser) with a seeded RNG and prints ticks/second plus a
 state hash. The same seed always produces the same hash, so a performance change that keeps the hash identical did not
@@ -37,6 +53,7 @@ change simulation behavior.
 - `npm run bench -- --ticks 5000 --seed 7 --cols 300 --rows 200`
 - `npm run bench -- --world dist/assets/worlds/zoo.json --render` (load a world; `--render` also exercises the renderer)
 - `npm run bench -- --org dist/assets/organisms/shark.json` (start from a single organism)
+- `npm run bench -- --engine object ...` runs the original implementation instead of `SimWorld`
 
 In the browser, the running engine is exposed as `window.engine` for debugging from the console.
 
