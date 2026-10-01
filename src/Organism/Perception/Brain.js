@@ -65,7 +65,7 @@ class Brain {
                 closest = obs.distance;
             }
         }
-        this.observations = [];
+        this.observations.length = 0;
         if (decision == Decision.chase) {
             this.owner.changeDirection(move_direction);
             return true;

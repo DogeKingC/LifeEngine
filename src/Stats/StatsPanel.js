@@ -23,6 +23,7 @@ class StatsPanel {
     }
 
     startAutoRender() {
+        this.stopAutoRender(); // never stack intervals
         this.setChart();
         this.render_loop = setInterval(function(){this.updateChart();}.bind(this), 1000);
     }

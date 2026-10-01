@@ -522,12 +522,17 @@ class ControlPanel {
     }
 
     update(delta_time) {
-        $('#fps-actual').text("Actual FPS: " + Math.floor(this.engine.actual_fps));
-        $('#reset-count').text("Auto reset count: " + this.engine.env.reset_count);
-        this.stats_panel.updateDetails();
+        // Text stats don't need to refresh every frame; DOM writes and the
+        // species scan behind them are comparatively expensive.
+        this.text_update_timer = (this.text_update_timer || 0) - delta_time;
+        if (this.text_update_timer <= 0) {
+            this.text_update_timer = 250;
+            $('#fps-actual').text("Actual FPS: " + Math.floor(this.engine.actual_fps));
+            $('#reset-count').text("Auto reset count: " + this.engine.env.reset_count);
+            this.stats_panel.updateDetails();
+        }
         if (WorldConfig.headless)
             this.updateHeadlessIcon(delta_time);
-
     }
 
 }

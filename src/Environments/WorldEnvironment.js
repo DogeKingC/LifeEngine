@@ -29,14 +29,28 @@ class WorldEnvironment extends Environment{
     }
 
     update() {
-        var to_remove = [];
-        for (var i in this.organisms) {
-            var org = this.organisms[i];
-            if (!org.living || !org.update()) {
-                to_remove.push(i);
-            }
+        // Update every organism alive at the start of the tick, compacting the
+        // array in place. Organisms born during this tick are appended past
+        // `count` and are kept (not updated) until the next tick. This replaces
+        // a for-in + splice loop that was O(n^2) when many organisms died at once.
+        const orgs = this.organisms;
+        const count = orgs.length;
+        let write = 0;
+        for (let i = 0; i < count; i++) {
+            const org = orgs[i];
+            if (org.living && org.update())
+                orgs[write++] = org;
+            else
+                this.total_mutability -= org.mutability;
         }
-        this.removeOrganisms(to_remove);
+        const removed = count - write;
+        if (removed > 0) {
+            for (let i = count; i < orgs.length; i++)
+                orgs[write++] = orgs[i];
+            orgs.length = write;
+            if (write === 0)
+                this.onPopulationExtinct();
+        }
         if (Hyperparams.foodDropProb > 0) {
             this.generateFood();
         }
@@ -48,7 +62,7 @@ class WorldEnvironment extends Environment{
 
     render() {
         if (WorldConfig.headless) {
-            this.renderer.cells_to_render.clear();
+            this.renderer.clearRenderQueue();
             return;
         }
         this.renderer.renderCells();
@@ -65,13 +79,16 @@ class WorldEnvironment extends Environment{
             this.total_mutability -= this.organisms[i].mutability;
             this.organisms.splice(i, 1);
         }
-        if (this.organisms.length === 0 && start_pop > 0) {
-            if (WorldConfig.auto_pause)
-                $('.pause-button')[0].click();
-            else if(WorldConfig.auto_reset) {
-                this.reset_count++;
-                this.reset(false);
-            }
+        if (this.organisms.length === 0 && start_pop > 0)
+            this.onPopulationExtinct();
+    }
+
+    onPopulationExtinct() {
+        if (WorldConfig.auto_pause)
+            $('.pause-button')[0].click();
+        else if(WorldConfig.auto_reset) {
+            this.reset_count++;
+            this.reset(false);
         }
     }
 
@@ -107,10 +124,16 @@ class WorldEnvironment extends Environment{
     }
 
     changeCell(c, r, state, owner) {
-        super.changeCell(c, r, state, owner);
-        this.renderer.addToRender(this.grid_map.cellAt(c, r));
+        // single bounds-checked lookup instead of one per setter
+        var cell = this.grid_map.cellAt(c, r);
+        if (cell === null)
+            return;
+        cell.state = state;
+        cell.cell_owner = owner;
+        cell.owner = owner != null ? owner.org : null;
+        this.renderer.addToRender(cell);
         if(state == CellStates.wall)
-            this.walls.push(this.grid_map.cellAt(c, r));
+            this.walls.push(cell);
     }
 
     clearWalls() {
@@ -129,9 +152,8 @@ class WorldEnvironment extends Environment{
     
     clearDeadOrganisms() {
         let to_remove = [];
-        for (let i in this.organisms) {
-            let org = this.organisms[i];
-            if (!org.living)
+        for (let i = 0; i < this.organisms.length; i++) {
+            if (!this.organisms[i].living)
                 to_remove.push(i);
         }
         this.removeOrganisms(to_remove);

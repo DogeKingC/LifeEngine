@@ -6,6 +6,7 @@ class Cell{
     constructor(state, col, row, x, y){
         this.owner = null; // owner organism
         this.cell_owner = null; // specific body cell of the owner organism that occupies this grid cell
+        this.render_pending = false; // true while queued in the renderer's dirty list
         this.setType(state);
         this.col = col;
         this.row = row;

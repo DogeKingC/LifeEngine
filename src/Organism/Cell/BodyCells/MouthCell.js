@@ -9,11 +9,15 @@ class MouthCell extends BodyCell{
 
     performFunction() {
         var env = this.org.env;
+        var grid_map = env.grid_map;
         var real_c = this.getRealCol();
         var real_r = this.getRealRow();
-        for (var loc of Hyperparams.edibleNeighbors){
-            var cell = env.grid_map.cellAt(real_c+loc[0], real_r+loc[1]);
-            this.eatNeighbor(cell, env);
+        var neighbors = Hyperparams.edibleNeighbors;
+        for (var i = 0; i < neighbors.length; i++){
+            var loc = neighbors[i];
+            var cell = grid_map.cellAt(real_c+loc[0], real_r+loc[1]);
+            if (cell != null && cell.state == CellStates.food)
+                this.eatNeighbor(cell, env);
         }
     }
 

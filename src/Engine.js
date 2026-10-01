@@ -3,9 +3,20 @@ const ControlPanel = require('./Controllers/ControlPanel');
 const OrganismEditor = require('./Environments/OrganismEditor');
 const ColorScheme = require('./Rendering/ColorScheme');
 
-// If the simulation speed is below this value, a new interval will be created to handle ui rendering
-// at a reasonable speed. If it is above, the simulation interval will be used to update the ui.
-const min_render_speed = 60;
+// Target fps at or above this value means "as fast as possible". Browsers clamp
+// setInterval to >= ~4ms, so a plain one-tick-per-interval loop could never
+// exceed ~250 ticks/sec. In max mode each interval runs a time-budgeted batch.
+const max_fps = 1000;
+// Milliseconds of simulation work per interval in max mode. Leaves the rest of
+// each frame for rendering and input so the page stays responsive.
+const max_mode_budget = 10;
+// How often the "Actual FPS" estimate is recomputed (ms).
+const fps_sample_period = 500;
+
+const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+const raf = typeof requestAnimationFrame !== 'undefined'
+    ? requestAnimationFrame
+    : (cb) => setTimeout(() => cb(now()), 1000/60);
 
 class Engine {
     constructor(){
@@ -16,83 +27,76 @@ class Engine {
         this.colorscheme = new ColorScheme(this.env, this.organism_editor);
         this.colorscheme.loadColorScheme();
         this.env.OriginOfLife();
-        
-        this.sim_last_update = Date.now();
-        this.sim_delta_time = 0;
 
-        this.ui_last_update = Date.now();
-        this.ui_delta_time = 0;
+        this.ui_last_update = now();
+        this.ticks_since_sample = 0;
+        this.last_sample_time = now();
 
         this.actual_fps = 0;
         this.running = false;
+        this.startRenderLoop();
     }
 
     start(fps=60) {
         if (fps <= 0)
             fps = 1;
         this.fps = fps;
-        this.sim_loop = setInterval(()=>{
-            this.updateSimDeltaTime();
-            this.environmentUpdate();
-        }, 1000/fps);
-        this.running = true;
-        if (this.fps >= min_render_speed) {
-            if (this.ui_loop != null) {
-                clearInterval(this.ui_loop);
-                this.ui_loop = null;
-            }
+        clearInterval(this.sim_loop);
+        if (fps >= max_fps) {
+            this.sim_loop = setInterval(() => this.runBudgetedTicks(), 0);
         }
-        else
-            this.setUiLoop();
+        else {
+            this.sim_loop = setInterval(() => this.tick(), 1000/fps);
+        }
+        this.running = true;
     }
-    
+
     stop() {
         clearInterval(this.sim_loop);
+        this.sim_loop = null;
         this.running = false;
-        this.setUiLoop();
+        this.actual_fps = 0;
     }
 
     restart(fps) {
-        clearInterval(this.sim_loop);
         this.start(fps);
     }
 
-    setUiLoop() {
-        if (!this.ui_loop) {
-            this.ui_loop = setInterval(()=> {
-                this.updateUIDeltaTime();
-                this.necessaryUpdate();
-            }, 1000/min_render_speed);
+    tick() {
+        this.env.update();
+        this.ticks_since_sample++;
+    }
+
+    runBudgetedTicks() {
+        const deadline = now() + max_mode_budget;
+        do {
+            this.tick();
+        } while (this.running && now() < deadline);
+    }
+
+    // Rendering is decoupled from the simulation: draw at most once per display
+    // frame no matter how many ticks ran, instead of once per tick.
+    startRenderLoop() {
+        const frame = () => {
+            this.renderFrame();
+            raf(frame);
+        };
+        raf(frame);
+    }
+
+    renderFrame() {
+        const t = now();
+        const ui_delta_time = t - this.ui_last_update;
+        this.ui_last_update = t;
+        if (t - this.last_sample_time >= fps_sample_period) {
+            this.actual_fps = this.running ? this.ticks_since_sample * 1000 / (t - this.last_sample_time) : 0;
+            this.ticks_since_sample = 0;
+            this.last_sample_time = t;
         }
-    }
-
-    updateSimDeltaTime() {
-        this.sim_delta_time = Date.now() - this.sim_last_update;
-        this.sim_last_update = Date.now();
-        if (!this.ui_loop) // if the ui loop isn't running, use the sim delta time
-            this.ui_delta_time = this.sim_delta_time;
-    }
-
-    updateUIDeltaTime() {
-        this.ui_delta_time = Date.now() - this.ui_last_update;
-        this.ui_last_update = Date.now();
-    }
-
-    environmentUpdate() {
-        this.actual_fps = (1000/this.sim_delta_time);
-        this.env.update(this.sim_delta_time);
-        if(this.ui_loop == null) {
-            this.necessaryUpdate();
-        }
-            
-    }
-
-    necessaryUpdate() {
         this.env.render();
-        this.controlpanel.update(this.ui_delta_time);
+        this.controlpanel.update(ui_delta_time);
         this.organism_editor.update();
     }
-
 }
 
 module.exports = Engine;

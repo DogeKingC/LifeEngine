@@ -3,6 +3,8 @@ class CellState{
     constructor(name) {
         this.name = name;
         this.color = 'black';
+        this.custom_render = false; // true if render() draws more than a flat square
+        this.active = false; // true if body cells of this state do work each tick
     }
 
     render(ctx, cell, size) {
@@ -29,11 +31,13 @@ class Wall extends CellState {
 class Mouth extends CellState {
     constructor() {
         super('mouth');
+        this.active = true;
     }
 }
 class Producer extends CellState {
     constructor() {
         super('producer');
+        this.active = true;
     }
 }
 class Mover extends CellState {
@@ -44,6 +48,7 @@ class Mover extends CellState {
 class Killer extends CellState {
     constructor() {
         super('killer');
+        this.active = true;
     }
 }
 class Armor extends CellState {
@@ -55,6 +60,8 @@ class Eye extends CellState {
     constructor() {
         super('eye');
         this.slit_color = 'black';
+        this.custom_render = true;
+        this.active = true;
     }
     render(ctx, cell, size) {
         ctx.fillStyle = this.color;

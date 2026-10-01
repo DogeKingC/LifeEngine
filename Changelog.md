@@ -6,7 +6,19 @@
 - Added ability to change species name via UI
 
 ### Simulation Enhancements:
-- 
+- Performance: roughly 1.5x faster simulation ticks (identical results for the same RNG sequence) by caching rotated
+  body offsets, skipping passive cells, and replacing an O(n^2) organism-removal loop
+- Performance: "MAX" speed now runs batches of ticks per timer callback instead of being capped at ~250 ticks/sec by
+  browser timer clamping
+- Performance: rendering is decoupled from simulation (once per display frame via requestAnimationFrame) and batched
+  by cell color, cutting canvas fillStyle changes by ~100x
+- Stats text panel refreshes 4x/sec instead of every frame
+- Fixed stats chart intervals stacking when reopening the stats tab
+- Added headless benchmark (`npm run bench`)
+
+### New Content:
+- Organisms: Thornbush, Coral (plants), Grazer (food-seeking herbivore), Shark (eyed predator)
+- World: Food Chain (plants, grazers and sharks in three wall-separated regions)
 
 ## 1.0.5 (4/23/2023)
 

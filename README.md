@@ -30,6 +30,16 @@ To load custom creations (found in `/dist/assets`), you must have a simple web s
 - Watch mode (dev mode that auto-builds when you save a file): `npm run build-watch`
 - Dev mode (better error messages): `npm run build-dev` 
 
+### Headless benchmark
+`npm run bench` runs the real simulation code in Node (no browser) with a seeded RNG and prints ticks/second plus a
+state hash. The same seed always produces the same hash, so a performance change that keeps the hash identical did not
+change simulation behavior.
+- `npm run bench -- --ticks 5000 --seed 7 --cols 300 --rows 200`
+- `npm run bench -- --world dist/assets/worlds/zoo.json --render` (load a world; `--render` also exercises the renderer)
+- `npm run bench -- --org dist/assets/organisms/shark.json` (start from a single organism)
+
+In the browser, the running engine is exposed as `window.engine` for debugging from the console.
+
 
 # How the Simulation Works
 ## The Environment

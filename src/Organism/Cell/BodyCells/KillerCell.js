@@ -11,9 +11,10 @@ class KillerCell extends BodyCell{
         var env = this.org.env;
         var c = this.getRealCol();
         var r = this.getRealRow();
-        for (var loc of Hyperparams.killableNeighbors) {
-            var cell = env.grid_map.cellAt(c+loc[0], r+loc[1]);
-            this.killNeighbor(cell);
+        var neighbors = Hyperparams.killableNeighbors;
+        for (var i = 0; i < neighbors.length; i++) {
+            var loc = neighbors[i];
+            this.killNeighbor(env.grid_map.cellAt(c+loc[0], r+loc[1]));
         }
     }
 

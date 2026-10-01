@@ -161,11 +161,7 @@ class Organism {
         var new_c = this.c + direction_c;
         var new_r = this.r + direction_r;
         if (this.isClear(new_c, new_r)) {
-            for (var cell of this.anatomy.cells) {
-                var real_c = this.c + cell.rotatedCol(this.rotation);
-                var real_r = this.r + cell.rotatedRow(this.rotation);
-                this.env.changeCell(real_c, real_r, CellStates.empty, null);
-            }
+            this.fillBody(CellStates.empty);
             this.c = new_c;
             this.r = new_r;
             this.updateGrid();
@@ -182,11 +178,7 @@ class Organism {
         }
         var new_rotation = Directions.getRandomDirection();
         if(this.isClear(this.c, this.r, new_rotation)){
-            for (var cell of this.anatomy.cells) {
-                var real_c = this.c + cell.rotatedCol(this.rotation);
-                var real_r = this.r + cell.rotatedRow(this.rotation);
-                this.env.changeCell(real_c, real_r, CellStates.empty, null);
-            }
+            this.fillBody(CellStates.empty);
             this.rotation = new_rotation;
             this.direction = Directions.getRandomDirection();
             this.updateGrid();
@@ -238,12 +230,15 @@ class Organism {
     }
 
     isClear(col, row, rotation=this.rotation) {
-        for(var loccell of this.anatomy.cells) {
-            var cell = this.getRealCell(loccell, col, row, rotation);
+        var offsets = this.anatomy.getRotatedOffsets(rotation);
+        var grid_map = this.env.grid_map;
+        var food_passable = !Hyperparams.foodBlocksReproduction;
+        for (var i = 0; i < offsets.length; i += 2) {
+            var cell = grid_map.cellAt(col + offsets[i], row + offsets[i+1]);
             if (cell==null) {
                 return false;
             }
-            if (cell.owner==this || cell.state==CellStates.empty || (!Hyperparams.foodBlocksReproduction && cell.state==CellStates.food)){
+            if (cell.owner==this || cell.state==CellStates.empty || (food_passable && cell.state==CellStates.food)){
                 continue;
             }
             return false;
@@ -259,20 +254,24 @@ class Organism {
     }
 
     die() {
-        for (var cell of this.anatomy.cells) {
-            var real_c = this.c + cell.rotatedCol(this.rotation);
-            var real_r = this.r + cell.rotatedRow(this.rotation);
-            this.env.changeCell(real_c, real_r, CellStates.food, null);
-        }
+        this.fillBody(CellStates.food);
         this.species.decreasePop();
         this.living = false;
     }
 
+    // set every grid cell covered by the body to `state` with no owner
+    fillBody(state) {
+        var offsets = this.anatomy.getRotatedOffsets(this.rotation);
+        for (var i = 0; i < offsets.length; i += 2)
+            this.env.changeCell(this.c + offsets[i], this.r + offsets[i+1], state, null);
+    }
+
     updateGrid() {
-        for (var cell of this.anatomy.cells) {
-            var real_c = this.c + cell.rotatedCol(this.rotation);
-            var real_r = this.r + cell.rotatedRow(this.rotation);
-            this.env.changeCell(real_c, real_r, cell.state, cell);
+        var cells = this.anatomy.cells;
+        var offsets = this.anatomy.getRotatedOffsets(this.rotation);
+        for (var i = 0; i < cells.length; i++) {
+            var cell = cells[i];
+            this.env.changeCell(this.c + offsets[2*i], this.r + offsets[2*i+1], cell.state, cell);
         }
     }
 
@@ -285,8 +284,9 @@ class Organism {
         if (this.food_collected >= this.foodNeeded()) {
             this.reproduce();
         }
-        for (var cell of this.anatomy.cells) {
-            cell.performFunction();
+        var active = this.anatomy.getActiveCells();
+        for (var i = 0; i < active.length; i++) {
+            active[i].performFunction();
             if (!this.living)
                 return this.living
         }

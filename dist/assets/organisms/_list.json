@@ -1,5 +1,21 @@
 [
     {
+        "name": "Thornbush",
+        "value": "thornbush"
+    },
+    {
+        "name": "Coral",
+        "value": "coral"
+    },
+    {
+        "name": "Grazer",
+        "value": "grazer"
+    },
+    {
+        "name": "Shark",
+        "value": "shark"
+    },
+    {
         "name": "Ball",
         "value": "Ball"
     },

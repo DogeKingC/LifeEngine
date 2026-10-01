@@ -11,6 +11,7 @@ class Anatomy {
 
     clear() {
         this.cells = [];
+        this.invalidateCache();
         this.is_producer = false;
         this.is_mover = false;
         this.has_eyes = false;
@@ -28,6 +29,7 @@ class Anatomy {
     addDefaultCell(state, c, r) {
         var new_cell = BodyCellFactory.createDefault(this.owner, state, c, r);
         this.cells.push(new_cell);
+        this.invalidateCache();
         return new_cell;
     }
 
@@ -37,12 +39,14 @@ class Anatomy {
         }
         var new_cell = BodyCellFactory.createRandom(this.owner, state, c, r);
         this.cells.push(new_cell);
+        this.invalidateCache();
         return new_cell;
     }
 
     addInheritCell(parent_cell) {
         var new_cell = BodyCellFactory.createInherited(this.owner, parent_cell);
         this.cells.push(new_cell);
+        this.invalidateCache();
         return new_cell;
     }
 
@@ -63,11 +67,44 @@ class Anatomy {
             var cell = this.cells[i];
             if (cell.loc_col == c && cell.loc_row == r){
                 this.cells.splice(i, 1);
+                this.invalidateCache();
                 break;
             }
         }
         this.checkTypeChange();
         return true;
+    }
+
+    invalidateCache() {
+        // per-rotation [col0, row0, col1, row1, ...] offsets, built lazily
+        this.rotated_offsets = [null, null, null, null];
+        this.active_cells = null;
+    }
+
+    // Cells whose performFunction does something (armor/mover cells are passive).
+    // Order matches this.cells so RNG consumption is unchanged.
+    getActiveCells() {
+        if (this.active_cells === null)
+            this.active_cells = this.cells.filter(cell => cell.state.active);
+        return this.active_cells;
+    }
+
+    // Returns the cells' offsets from the organism center for the given rotation
+    // as a flat Int32Array. Cached because body cells are instances of several
+    // classes, so reading loc_col/loc_row across them is a megamorphic (slow)
+    // property access on the hottest simulation paths.
+    getRotatedOffsets(rotation) {
+        var offsets = this.rotated_offsets[rotation];
+        if (offsets === null) {
+            var cells = this.cells;
+            offsets = new Int32Array(cells.length * 2);
+            for (var i = 0; i < cells.length; i++) {
+                offsets[2*i] = cells[i].rotatedCol(rotation);
+                offsets[2*i+1] = cells[i].rotatedRow(rotation);
+            }
+            this.rotated_offsets[rotation] = offsets;
+        }
+        return offsets;
     }
 
     getLocalCell(c, r) {
