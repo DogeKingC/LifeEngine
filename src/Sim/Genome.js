@@ -30,6 +30,8 @@ class Genome {
         this.is_mover = false;
         this.has_eyes = false;
         this.has_camo = false;
+        this.has_booster = false;
+        this.has_poison = false;
         let base_distance = 4;
         let num_active = 0;
         for (let i = 0; i < n; i++) {
@@ -43,6 +45,8 @@ class Genome {
             else if (cell.type === CellStates.mover.id) this.is_mover = true;
             else if (cell.type === CellStates.eye.id) this.has_eyes = true;
             else if (cell.type === CellStates.camo.id) this.has_camo = true;
+            else if (cell.type === CellStates.booster.id) this.has_booster = true;
+            else if (cell.type === CellStates.poison.id) this.has_poison = true;
             if (ACTIVE[cell.type]) num_active++;
         }
         // birth distance of an organism born with exactly these cells

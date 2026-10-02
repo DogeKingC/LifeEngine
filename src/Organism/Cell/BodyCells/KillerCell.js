@@ -24,9 +24,13 @@ class KillerCell extends BodyCell{
         if(n_cell == null || n_cell.owner == null || n_cell.owner == this.org || !n_cell.owner.living || n_cell.state == CellStates.armor) 
             return;
         var is_hit = n_cell.state == CellStates.killer; // has to be calculated before death
+        var is_spike = n_cell.state == CellStates.spike;
         n_cell.owner.harm();
         if (Hyperparams.instaKill && is_hit) {
             this.org.harm();
+        }
+        if (is_spike) {
+            this.org.harm(); // spikes hurt whoever attacks them
         }
     }
 }

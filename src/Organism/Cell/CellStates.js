@@ -94,6 +94,27 @@ class Camo extends CellState {
         super('camo');
     }
 }
+class Leaf extends CellState {
+    constructor() {
+        super('leaf');
+        this.active = true;
+    }
+}
+class Spike extends CellState {
+    constructor() {
+        super('spike');
+    }
+}
+class Booster extends CellState {
+    constructor() {
+        super('booster');
+    }
+}
+class Poison extends CellState {
+    constructor() {
+        super('poison');
+    }
+}
 
 const CellStates = {
     empty: new Empty(),
@@ -107,10 +128,16 @@ const CellStates = {
     eye: new Eye(),
     healer: new Healer(),
     camo: new Camo(),
+    leaf: new Leaf(),
+    spike: new Spike(),
+    booster: new Booster(),
+    poison: new Poison(),
     defineLists() {
-        this.all = [this.empty, this.food, this.wall, this.mouth, this.producer, this.mover, this.killer, this.armor, this.eye, this.healer, this.camo]
+        // ids must stay below 16: the render snapshot stores the id in 4 bits
+        this.all = [this.empty, this.food, this.wall, this.mouth, this.producer, this.mover, this.killer, this.armor, this.eye,
+                    this.healer, this.camo, this.leaf, this.spike, this.booster, this.poison]
         this.classic_living = [this.mouth, this.producer, this.mover, this.killer, this.armor, this.eye];
-        this.extended_living = [this.healer, this.camo];
+        this.extended_living = [this.healer, this.camo, this.leaf, this.spike, this.booster, this.poison];
         this.living = this.classic_living.concat(this.extended_living);
         for (let i = 0; i < this.all.length; i++)
             this.all[i].id = i; // compact id used by GridMap.state_ids
@@ -118,8 +145,8 @@ const CellStates = {
     getRandomName: function() {
         return this.all[Math.floor(Math.random() * this.all.length)].name;
     },
-    // Types that mutation and random generation may produce. Healer/camo can be
-    // disabled in the evolution controls to get the classic six-cell rules.
+    // Types that mutation and random generation may produce. The extended types
+    // can be disabled in the evolution controls to get the classic six-cell rules.
     getRandomLivingType: function() {
         const pool = Hyperparams.extendedCellTypes ? this.living : this.classic_living;
         return pool[Math.floor(Math.random() * pool.length)];

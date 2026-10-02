@@ -46,6 +46,10 @@ class Brain {
         this.decisions[CellStates.armor.name] = Decision.getRandom();
         this.decisions[CellStates.eye.name] = Decision.getRandom();
         this.decisions[CellStates.healer.name] = Decision.getRandom();
+        this.decisions[CellStates.leaf.name] = Decision.getRandom();
+        this.decisions[CellStates.spike.name] = Decision.getRandom();
+        this.decisions[CellStates.booster.name] = Decision.getRandom();
+        this.decisions[CellStates.poison.name] = Decision.getRandom();
     }
 
     // Called at the start of every tick. Only what the eyes see this tick should

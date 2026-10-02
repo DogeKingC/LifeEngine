@@ -81,8 +81,12 @@ Organism Cells are only found in organisms, and cannot exist on their own in the
 - Eye - Light purple with a slit, allows the organism to see and move intelligently. See further description below.
 - Healer - White, each tick has a chance (`Healer repair chance`, default 10%) to repair 1 point of damage on its organism.
 - Camo - Olive, makes its organism invisible to other organisms' eyes: they see straight through its body.
+- Leaf - Dark green, photosynthesis: each tick a chance (`Leaf feeding chance`, default 1%) to feed its own organism 1 food directly. The food never appears in the world, so it can't be stolen, and leaf organisms don't need a mouth. Like producers, leaves don't work on movers unless `Movers can produce food` is on.
+- Spike - Orange, a killer cell that damages a spike takes 1 damage itself.
+- Booster - Brown, a moving organism with a booster moves 2 cells per tick.
+- Poison - Lime, an organism with poison leaves no food behind when it dies, so killing it gains predators nothing.
 
-Healer and camo cells can be turned off with the `Healer & camo cells evolve` evolution control to get the classic six cell types. Worlds saved before these cells existed load with them turned off.
+These six cell types can be turned off with the `New cell types evolve` evolution control to get the classic six cell types. Worlds saved before healer/camo existed load with them turned off.
 
 ## Organisms
 Organisms are structures of cells that eat food, reproduce, and die.

@@ -21,6 +21,16 @@
         "subname": "camo + healer"
     },
     {
+        "name": "Cactus",
+        "value": "cactus",
+        "subname": "leaf + spike"
+    },
+    {
+        "name": "Hornet",
+        "value": "hornet",
+        "subname": "booster + poison"
+    },
+    {
         "name": "Ball",
         "value": "Ball"
     },

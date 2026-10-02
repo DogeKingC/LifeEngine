@@ -303,6 +303,9 @@ class ControlPanel {
         $('#heal-prob').change(function() {
             Hyperparams.healProb = parseFloat($('#heal-prob').val());
         });
+        $('#leaf-prob').change(function() {
+            Hyperparams.leafProb = parseFloat($('#leaf-prob').val());
+        });
         $('#org-limit').change(function() {
             Hyperparams.maxOrganisms = parseInt($('#org-limit').val());
         });
@@ -394,6 +397,7 @@ class ControlPanel {
         $('#see-through-self').prop('checked', Hyperparams.seeThroughSelf);
         $('#extended-cells').prop('checked', Hyperparams.extendedCellTypes);
         $('#heal-prob').val(Hyperparams.healProb);
+        $('#leaf-prob').val(Hyperparams.leafProb);
         $('#global-mutation').val(Hyperparams.globalMutability);
 
         if (!Hyperparams.useGlobalMutability) {

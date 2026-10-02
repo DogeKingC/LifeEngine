@@ -258,7 +258,8 @@ class Organism {
     die() {
         if (!this.living)
             return; // dying twice would decrement the species population twice
-        this.fillBody(CellStates.food);
+        // poisonous bodies leave nothing behind
+        this.fillBody(this.anatomy.has_poison ? CellStates.empty : CellStates.food);
         this.species.decreasePop();
         this.living = false;
     }
@@ -306,6 +307,8 @@ class Organism {
                 this.ignore_brain_for --;
             }
             var moved = this.attemptMove();
+            if (moved && this.anatomy.has_booster)
+                this.attemptMove(); // boosters move a second cell
             if ((this.move_count > this.move_range && !changed_dir) || !moved){
                 var rotated = this.attemptRotate();
                 if (!rotated) {

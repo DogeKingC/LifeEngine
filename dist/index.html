@@ -63,6 +63,10 @@
 							<div class='cell-legend-type' id='eye' title="Eye: Observes cells and decides movement."></div>
 							<div class='cell-legend-type' id='healer' title="Healer: Has a chance each tick to repair 1 damage on its organism."></div>
 							<div class='cell-legend-type' id='camo' title="Camo: Makes its organism invisible to other organisms' eyes."></div>
+							<div class='cell-legend-type' id='leaf' title="Leaf: Each tick, a chance to feed its own organism directly. The food never appears in the world."></div>
+							<div class='cell-legend-type' id='spike' title="Spike: A killer cell that damages a spike takes 1 damage itself."></div>
+							<div class='cell-legend-type' id='booster' title="Booster: A moving organism with a booster moves 2 cells per tick."></div>
+							<div class='cell-legend-type' id='poison' title="Poison: An organism with poison leaves no food behind when it dies."></div>
 							<div class='cell-legend-type' id='food' title="Food: Not part of an organism. Once an organism has eaten enough food, it will reproduce."></div>
 							<div class='cell-legend-type' id='wall' title="Wall: Not part of an organism. Blocks movement and reproduction."></div>
 						</div><br>
@@ -106,6 +110,12 @@
 							<div style='grid-column: 3;'>
 								<div class='cell-type' id='healer' title="Healer: Has a chance each tick to repair 1 damage on its organism."></div>
 								<div class='cell-type' id='camo' title="Camo: Makes its organism invisible to other organisms' eyes."></div>
+								<div class='cell-type' id='leaf' title="Leaf: Each tick, a chance to feed its own organism directly. The food never appears in the world."></div>
+							</div>
+							<div style='grid-column: 4;'>
+								<div class='cell-type' id='spike' title="Spike: A killer cell that damages a spike takes 1 damage itself."></div>
+								<div class='cell-type' id='booster' title="Booster: A moving organism with a booster moves 2 cells per tick."></div>
+								<div class='cell-type' id='poison' title="Poison: An organism with poison leaves no food behind when it dies."></div>
 							</div>
 
 							<button id='clear-editor'>Clear</button>
@@ -158,6 +168,10 @@
 									<option value="armor">armor</option>
 									<option value="eye">eye</option>
 									<option value="healer">healer</option>
+									<option value="leaf">leaf</option>
+									<option value="spike">spike</option>
+									<option value="booster">booster</option>
+									<option value="poison">poison</option>
 								</select>
 
 								<label for="reaction-edit">Reaction: </label>
@@ -242,11 +256,14 @@
 						<label for="extra-mover-cost" title='Additional food cost for movers to reproduce'>Extra mover reproduction cost:</label>
 						<input type="number" id="extra-mover-cost" value=0 max="1000" step="1">
 						<br>
-						<label for="extended-cells" title='When on, mutation and random generation can produce healer and camo cells. Turn off for the classic six cell types.'>Healer &amp; camo cells evolve</label>
+						<label for="extended-cells" title='When on, mutation and random generation can produce healer, camo, leaf, spike, booster and poison cells. Turn off for the classic six cell types.'>New cell types evolve</label>
 						<input type="checkbox" id="extended-cells" checked>
 						<br>
 						<label for="heal-prob" title='Probability (%) each tick that a healer cell repairs 1 point of damage on its organism.'>Healer repair chance:</label>
 						<input type="number" id="heal-prob" min="0" max="100" value=10 step="1">
+						<br>
+						<label for="leaf-prob" title='Probability (%) each tick that a leaf cell feeds its organism 1 food.'>Leaf feeding chance:</label>
+						<input type="number" id="leaf-prob" min="0" max="100" value=1 step="0.5">
 
 						
 					</div>

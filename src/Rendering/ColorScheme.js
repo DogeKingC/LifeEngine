@@ -12,6 +12,10 @@ var color_scheme = {
     "eye":"#B6C1EA",
     "healer":"#F2F2F2",
     "camo":"#6B7A2F",
+    "leaf":"#0B8A5A",
+    "spike":"#FF7A00",
+    "booster":"#A0522D",
+    "poison":"#B6FF00",
     "eye-slit": "#0E1318"
 }
 

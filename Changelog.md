@@ -40,12 +40,16 @@
 - Random organism generator: fixed missing cell on the right edge of each layer and early stop logic
 
 ### New Cell Types:
+- Leaf: photosynthesis, chance each tick to feed its organism directly (no food on the grid, no mouth needed)
+- Spike: killer cells that damage it take 1 damage back
+- Booster: movers with a booster move 2 cells per tick
+- Poison: organisms with poison leave no food when they die
 - Healer: chance each tick to repair 1 damage (configurable)
 - Camo: organism becomes invisible to other organisms' eyes
 - Both can be disabled in Evolution Controls; old worlds load with them disabled
 
 ### New Content:
-- Organism: Ghost (camouflaged, self-healing predator)
+- Organisms: Ghost (camouflaged, self-healing predator), Cactus (leaf plant with spikes), Hornet (fast poisonous predator)
 - Organisms: Thornbush, Coral (plants), Grazer (food-seeking herbivore), Shark (eyed predator)
 - World: Food Chain (plants, grazers and sharks in three wall-separated regions)
 

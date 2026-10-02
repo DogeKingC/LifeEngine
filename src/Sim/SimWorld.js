@@ -24,13 +24,15 @@ const KILLER = CellStates.killer.id;
 const ARMOR = CellStates.armor.id;
 const EYE = CellStates.eye.id;
 const HEALER = CellStates.healer.id;
+const LEAF = CellStates.leaf.id;
+const SPIKE = CellStates.spike.id;
 
 const NEUTRAL = 0, RETREAT = 1, CHASE = 2;
 const DEFAULT_BRAIN = new Uint8Array(NUM_STATES);
 DEFAULT_BRAIN[FOOD] = CHASE;
 DEFAULT_BRAIN[KILLER] = RETREAT;
 // decisions re-rolled when an organism first evolves an eye
-const RANDOMIZED_DECISIONS = ['mouth', 'producer', 'mover', 'armor', 'eye', 'healer'].map(n => CellStates[n].id);
+const RANDOMIZED_DECISIONS = ['mouth', 'producer', 'mover', 'armor', 'eye', 'healer', 'leaf', 'spike', 'booster', 'poison'].map(n => CellStates[n].id);
 
 const randomDirection = () => Math.floor(Math.random() * 4);
 const randomDecision = () => Math.floor(Math.random() * 3);
@@ -249,6 +251,7 @@ class SimWorld {
                     case KILLER: this.killer(org, c, r); break;
                     case EYE: this.eye(org, c, r, i); break;
                     case HEALER: this.healer(org); break;
+                    case LEAF: this.leaf(org); break;
                 }
                 if (!org.living)
                     return false;
@@ -263,6 +266,8 @@ class SimWorld {
             else
                 org.ignore_brain_for--;
             const moved = this.attemptMove(org);
+            if (moved && g.has_booster)
+                this.attemptMove(org); // boosters move a second cell
             if ((org.move_count > org.move_range && !changed_dir) || !moved) {
                 const rotated = this.attemptRotate(org);
                 if (!rotated) {
@@ -314,9 +319,12 @@ class SimWorld {
             if (target === null || target === org || !target.living || this.state[idx] === ARMOR)
                 continue;
             const is_hit = this.state[idx] === KILLER;
+            const is_spike = this.state[idx] === SPIKE;
             this.harm(target);
             if (Hyperparams.instaKill && is_hit)
                 this.harm(org);
+            if (is_spike)
+                this.harm(org); // spikes hurt whoever attacks them
         }
     }
 
@@ -348,6 +356,14 @@ class SimWorld {
         }
     }
 
+    // photosynthesis: food goes straight to the organism, never onto the grid
+    leaf(org) {
+        if (org.genome.is_mover && !Hyperparams.moversCanProduce)
+            return;
+        if (Math.random() * 100 < Hyperparams.leafProb)
+            org.food_collected++;
+    }
+
     healer(org) {
         if (org.damage > 0 && Math.random() * 100 < Hyperparams.healProb)
             org.damage--;
@@ -362,7 +378,7 @@ class SimWorld {
     die(org) {
         if (!org.living)
             return;
-        this.fillBody(org, FOOD);
+        this.fillBody(org, org.genome.has_poison ? EMPTY : FOOD); // poisonous bodies leave nothing
         org.species.decreasePop();
         org.living = false;
     }
@@ -785,7 +801,7 @@ class SimWorld {
             ignore_brain_for: org.ignore_brain_for, mutability: org.mutability, damage: org.damage,
             anatomy: {
                 birth_distance: org.birth_distance, is_producer: g.is_producer, is_mover: g.is_mover,
-                has_eyes: g.has_eyes, has_camo: g.has_camo, cells,
+                has_eyes: g.has_eyes, has_camo: g.has_camo, has_booster: g.has_booster, has_poison: g.has_poison, cells,
             },
         };
         if (g.is_mover && g.has_eyes) {

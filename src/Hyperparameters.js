@@ -30,7 +30,8 @@ const Hyperparams = {
 
         this.maxOrganisms = -1;
 
-        this.extendedCellTypes = true; // allow healer and camo cells to evolve
+        this.extendedCellTypes = true; // allow healer, camo, leaf, spike, booster and poison cells to evolve
+        this.leafProb = 1; // % chance per tick that a leaf cell feeds its organism
         this.healProb = 10; // % chance per tick that a healer cell repairs 1 damage
     },
 
