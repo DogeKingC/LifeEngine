@@ -1,8 +1,8 @@
 // Main-thread side of the simulation. Talks to SimHost in a Web Worker, or runs
-// the host on this thread if a worker can't be created (file:// pages, very
-// old browsers). The message API is identical either way.
+// the same worker code on this thread if a worker can't be created (e.g. a
+// content security policy forbids blob: workers). The message API is identical.
 
-const createHost = require('./SimHost');
+const { createWorker, runOnThisThread } = require('./createWorker');
 
 class SimClient {
     constructor() {
@@ -11,7 +11,6 @@ class SimClient {
         this.next_req = 1;
         this.in_worker = false;
         try {
-            const { createWorker } = require('./createWorker');
             this.worker = createWorker();
             this.worker.onmessage = (e) => this.dispatch(e.data);
             this.worker.onerror = (e) => {
@@ -37,8 +36,7 @@ class SimClient {
             this.worker = null;
         }
         this.in_worker = false;
-        // smaller slices: this thread also renders and handles input
-        this.host = createHost((msg) => setTimeout(() => this.dispatch(msg), 0), { budget: 8 });
+        this.host = runOnThisThread((msg) => this.dispatch(msg));
         this.sent_log = null;
         for (const msg of queued)
             this.host(msg);
@@ -76,7 +74,7 @@ class SimClient {
             this.worker.postMessage(msg, transfer || []);
         }
         else {
-            setTimeout(() => this.host(msg), 0);
+            this.host(msg);
         }
     }
 

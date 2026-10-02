@@ -17,13 +17,15 @@
 - Added headless benchmark (`npm run bench`)
 
 ### Simulation Engine Rewrite:
-- The simulation now runs in a Web Worker, so drawing and input never slow it down and the page stays at 60 fps even
-  when the simulation is saturated. The worker is embedded in bundle.js (still a single script to deploy) and also
-  runs when the page is opened from file://; if a worker can't start, the simulation falls back to the main thread
-- New data-oriented core (`src/Sim`): typed-array grid and shared immutable genomes. 1.3-3.4x faster per tick than the
-  previous version in Node; at MAX speed in the browser, roughly 5-11x more ticks/sec on the default and Food Chain
-  worlds and ~1.7x on the 15k-organism battleground world
-- Proven identical to the previous implementation: `npm test` runs both on the same seed and compares the final state
+- The simulation is now written in Rust and compiled to WebAssembly (`engine/`), running in a Web Worker so drawing
+  and input never slow it down and the page stays at 60 fps
+- Exact mode reproduces the original simulation exactly (checked by `npm test`) and runs about 4-6x faster than the
+  original object-based code in Node (2-3.5x faster than the previous JS version in the browser)
+- Fast mode adds multi-core simulation for big worlds: the grid is split into tiles updated in parallel; on a 4-core
+  machine the 17,000-organism battleground world runs ~1.6x faster than exact mode (~6x the original build). Results
+  vary slightly run to run, so exact mode is still available under World Controls
+- Multi-core needs a cross-origin isolated page; `coi-serviceworker.js` provides that on static hosts. Without it the
+  single-threaded engine is used
 - Renderer draws only cells that changed between snapshots
 - World saves are produced in the worker and downloaded as a Blob (large worlds no longer go through a data: URL)
 - Fixed stats charts hanging (infinite loop) when the chart's last tick wasn't in the record, and crashing on an empty record

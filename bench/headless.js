@@ -1,8 +1,9 @@
 // Headless harness: runs the real simulation code in Node with a stubbed DOM.
-// Usage: node bench/headless.js [--engine packed|object] [--ticks N] [--cols C] [--rows R] [--seed S]
-//            [--world path.json] [--org path.json] [--render] [--classic] [--insta-kill] [--food-drop P]
-// --engine packed (default) is the SimWorld core used by the game; object is the
-// original implementation, kept as a reference for bench/compare.js.
+// Usage: node bench/headless.js [--engine wasm|wasm-fast|object] [--threads N] [--ticks N] [--cols C] [--rows R]
+//            [--seed S] [--world path.json] [--org path.json] [--render] [--classic] [--insta-kill] [--food-drop P]
+// --engine wasm (default) is the Rust/WebAssembly engine in exact mode, wasm-fast its
+// fast (tiled, multi-threaded) mode; object is the original implementation, kept as
+// the reference for bench/compare.js.
 // Prints timing plus a deterministic state hash (same seed => same hash) so
 // optimizations can be checked for behavioral equivalence.
 
@@ -19,7 +20,7 @@ const WORLD = opt('world', null);
 const ORG = opt('org', null);
 const RENDER = args.includes('--render');
 const CLASSIC = args.includes('--classic'); // only the original six cell types
-const ENGINE = opt('engine', 'packed');
+const ENGINE = opt('engine', 'wasm');
 
 // deterministic PRNG (mulberry32) replacing Math.random
 let s = SEED >>> 0;
@@ -67,28 +68,39 @@ if (ENGINE === 'object') {
     cellNames = function* () { for (const col of env.grid_map.grid) for (const cell of col) yield cell.state.name; };
     orgSummary = (o) => [o.c, o.r, o.rotation, o.anatomy.cells.length, o.lifetime, o.food_collected, o.damage, o.direction, o.mutability, o.move_range];
 } else {
-    const SimWorld = require('../src/Sim/SimWorld');
-    const Genome = require('../src/Sim/Genome');
-    env = new SimWorld(COLS, ROWS, 5);
+    // Rust/WebAssembly core. --engine wasm (exact) or wasm-fast; --threads N for fast mode
+    const engine = require('./wasm-node')({ threads: parseInt(opt('threads', '1')), shared: ENGINE === 'wasm-fast' });
+    env = engine.world(COLS, ROWS);
+    env.ex.eng_seed(SEED >>> 0);
+    env.ex.eng_seed_threads((SEED * 7919) >>> 0);
+    if (ENGINE === 'wasm-fast') env.setFast(true);
+    env.syncParams();
     if (WORLD) {
         env.loadRaw(JSON.parse(fs.readFileSync(WORLD, 'utf8')));
     } else if (ORG) {
         env.reset(false);
         const raw = JSON.parse(fs.readFileSync(ORG, 'utf8'));
         const center = env.getCenter();
-        const org = new SimWorld.Org(Genome.fromRawCells(raw.anatomy.cells));
-        for (const k of ['can_rotate', 'move_range', 'mutability', 'direction', 'rotation', 'move_count', 'ignore_brain_for'])
-            if (raw[k] !== undefined) org[k] = raw[k];
-        if (raw.brain) env.loadBrain(org, raw.brain);
-        org.c = center[0]; org.r = center[1];
-        env.addOrganism(org);
-        FossilRecord.addSpecies(org, null);
+        const genome = env.genomeFromRaw(raw.anatomy.cells);
+        const slot = env.spawn(genome, {c: center[0], r: center[1], lifetime: 0, food_collected: 0, living: true,
+            direction: raw.direction, rotation: raw.rotation, can_rotate: raw.can_rotate, move_count: raw.move_count,
+            move_range: raw.move_range, ignore_brain_for: raw.ignore_brain_for, mutability: raw.mutability, damage: 0, species: 0},
+            env.brainFromRaw(raw.brain), false);
+        // FossilRecord.addSpecies after placing, drawing the name from the engine's generator
+        env.ex.eng_org_counts(slot);
+        const Species = require('../src/Stats/Species');
+        const s = new Species({countByName: () => ({})}, null, env.total_ticks);
+        s.name = env.ex.eng_rand().toString(36).substr(2, 10);
+        FossilRecord.extant_species[s.name] = s;
+        env.ex.eng_set_org_species(slot, env.speciesId(s));
     } else {
         env.OriginOfLife();
     }
     step = RENDER ? () => { env.update(); env.snapshot(); } : () => env.update();
-    cellNames = function* () { for (let i = 0; i < env.state.length; i++) yield CellStates.all[env.state[i]].name; };
-    orgSummary = (o) => [o.c, o.r, o.rotation, o.genome.n, o.lifetime, o.food_collected, o.damage, o.direction, o.mutability, o.move_range];
+    cellNames = function* () { const st = env.gridStates(); for (let i = 0; i < st.length; i++) yield CellStates.all[st[i]].name; };
+    const summaries = () => { const v = env.orgSummaries(); const out = []; for (let i = 0; i < v.length; i += 10) out.push(Array.from(v.subarray(i, i + 10))); return out; };
+    env.organismsForHash = summaries;
+    orgSummary = (o) => o;
 }
 
 let peak = 0;
@@ -104,7 +116,7 @@ let h = 0x811c9dc5;
 const mix = (v) => { h ^= v & 0xff; h = Math.imul(h, 0x01000193) >>> 0; };
 const names = CellStates.all.map(s => s.name);
 for (const name of cellNames()) mix(names.indexOf(name));
-for (const o of env.organisms) for (const v of orgSummary(o)) { mix(v); mix(v >> 8); }
+for (const o of (env.organismsForHash ? env.organismsForHash() : env.organisms)) for (const v of orgSummary(o)) { mix(v); mix(v >> 8); }
 mix(FossilRecord.numExtantSpecies());
 
 console.log(JSON.stringify({

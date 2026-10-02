@@ -9,9 +9,16 @@ const worker = {
     name: 'worker',
     target: 'webworker',
     entry: './src/Sim/sim.worker.js',
+    performance: { hints: false }, // large because the engine is embedded
     output: {
         filename: 'sim.worker.js',
         path: path.resolve(__dirname, 'build/'),
+    },
+    module: {
+        rules: [
+            // the Rust/WebAssembly engine builds, embedded as data URLs
+            { test: /\.wasm$/, type: 'asset/inline' },
+        ],
     },
 };
 
@@ -19,6 +26,7 @@ const main = {
     name: 'main',
     dependencies: ['worker'],
     entry: './src/index.js',
+    performance: { hints: false },
     output: {
         filename: 'bundle.js',
         path: path.resolve(__dirname, 'dist/js/'),

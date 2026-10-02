@@ -206,6 +206,12 @@ class ControlPanel {
         $('#clear-walls-reset').change(function() {
             WorldConfig.clear_walls_on_reset = this.checked;
         });
+        $('#engine-mode').change(function() {
+            WorldConfig.engine_mode = this.value;
+        });
+        $('#engine-threads').change(function() {
+            WorldConfig.threads = parseInt(this.value);
+        });
         $('#reset-with-editor-org').click( () => {
             let env = this.engine.env;
             if (!env.reset(true, false)) return;
@@ -476,6 +482,7 @@ class ControlPanel {
         }.bind(this));
 
         window.onbeforeunload = function (e) {
+            if (window.lifeEngineReloading) return; // one-time reload enabling multi-threading
             e = e || window.event;
             let return_str = 'this will cause a confirmation on page close'
             if (e) {
@@ -520,6 +527,21 @@ class ControlPanel {
         this.editor_controller.setDetailsPanel();
     }
 
+    updateEngineStatus() {
+        const e = this.engine.env.stats.engine;
+        if (!e) return;
+        let text = 'Engine: Rust/WebAssembly, ' + e.mode + ' mode';
+        if (e.mode === 'fast') {
+            text += ', ' + e.threads + (e.threads === 1 ? ' thread' : ' threads');
+            if (!e.shared)
+                text += ' (multi-core needs a cross-origin isolated page; see README)';
+        }
+        if (text !== this.last_engine_status) {
+            this.last_engine_status = text;
+            $('#engine-status').text(text);
+        }
+    }
+
     changeEngineSpeed(change_val) {
         this.engine.restart(change_val)
         this.fps = this.engine.fps;
@@ -551,6 +573,7 @@ class ControlPanel {
             $('#fps-actual').text("Actual FPS: " + Math.floor(this.engine.actual_fps));
             $('#reset-count').text("Auto reset count: " + this.engine.env.reset_count);
             this.stats_panel.updateDetails();
+            this.updateEngineStatus();
         }
         if (WorldConfig.headless)
             this.updateHeadlessIcon(delta_time);

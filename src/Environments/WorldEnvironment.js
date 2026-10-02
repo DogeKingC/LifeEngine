@@ -6,7 +6,8 @@ const WorldConfig = require('../WorldConfig');
 const FossilRecord = require('../Stats/FossilRecord');
 const SimClient = require('../Sim/SimClient');
 
-// Main-thread handle on the world. The simulation itself (SimWorld) runs in a
+// Main-thread handle on the world. The simulation itself (the Rust/WebAssembly
+// engine, driven by src/Sim/SimHost.js) runs in a
 // Web Worker; this class forwards user actions to it, draws the snapshots it
 // sends back, and keeps a copy of the latest statistics for the UI.
 class WorldEnvironment {
@@ -29,6 +30,9 @@ class WorldEnvironment {
         this.client.on('frame', (msg) => this.applyFrame(msg));
         this.client.on('extinct', () => {
             if (this.onExtinct) this.onExtinct();
+        });
+        this.client.on('fatal', (msg) => {
+            alert('The simulation engine failed to start: ' + msg.error);
         });
         this.last_hyper = '';
         this.last_config = '';

@@ -6,6 +6,24 @@
 		<link rel="icon" href="./img/icon.png">
 		<link rel="stylesheet" href="./css/style.css">
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css">
+		<script>
+			// Multi-threading needs a cross-origin isolated page. Static hosts can't
+			// send the headers for that, so a service worker adds them (see
+			// coi-serviceworker.js); the page reloads once when it first takes over.
+			(function () {
+				if (window.crossOriginIsolated || !window.isSecureContext || !('serviceWorker' in navigator)) return;
+				try { if (sessionStorage.getItem('coi-reloaded')) return; } catch (e) { return; }
+				navigator.serviceWorker.register('coi-serviceworker.js').then(function () {
+					function reload() {
+						try { sessionStorage.setItem('coi-reloaded', '1'); } catch (e) {}
+						window.lifeEngineReloading = true;
+						location.reload();
+					}
+					if (navigator.serviceWorker.controller) reload();
+					else navigator.serviceWorker.addEventListener('controllerchange', reload);
+				}).catch(function () {});
+			})();
+		</script>
 		<script type="text/javascript" src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
 	</head>
 	<body>
@@ -219,6 +237,25 @@
 						<br>
 						<label for="clear-walls-reset" title='When on, walls will be cleared when the environment resets'>Clear walls on reset</label>
 						<input type="checkbox" id="clear-walls-reset">
+						<h3>Simulation Engine</h3>
+						<label for="engine-mode" title='Fast: the world is split into regions updated in parallel on several CPU cores; results differ slightly from run to run. Exact: one core, organisms update in a fixed order, so the same start always gives the same result.'>Mode:</label>
+						<select id="engine-mode">
+							<option value="fast">Fast (multi-core)</option>
+							<option value="exact">Exact (reproducible)</option>
+						</select>
+						<label for="engine-threads" title='CPU threads used in fast mode. Auto uses one per core, leaving one for the page.'>Threads:</label>
+						<select id="engine-threads">
+							<option value="0">Auto</option>
+							<option value="1">1</option>
+							<option value="2">2</option>
+							<option value="3">3</option>
+							<option value="4">4</option>
+							<option value="6">6</option>
+							<option value="8">8</option>
+							<option value="12">12</option>
+							<option value="16">16</option>
+						</select>
+						<p id="engine-status">Engine: starting...</p>
 						<br>
 						<button id='save-env' title="Download save file for entire world">Save World</button>
 						<label for="save-env-name" title='Save World as:'>Save As:</label>

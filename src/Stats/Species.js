@@ -21,7 +21,7 @@ class Species {
 
     calcAnatomyDetails() {
         if (!this.anatomy) return;
-        if (this.anatomy.countByName) { // packed Genome (simulation worker)
+        if (this.anatomy.countByName) { // cell counts from the simulation engine
             this.cell_counts = this.anatomy.countByName();
             return;
         }

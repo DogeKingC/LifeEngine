@@ -1,5 +1,6 @@
 // Equivalence + speed test: runs the original object-based simulation and the
-// packed SimWorld core on the same seed and checks they end in the same state.
+// Rust/WebAssembly engine (exact mode) on the same seed and checks they end in
+// the same state.
 // Usage: node bench/compare.js   (exit code 1 on any mismatch)
 const { execFileSync } = require('child_process');
 const path = require('path');
@@ -17,12 +18,13 @@ const cases = [
     ['--ticks', '3000', '--seed', '5', '--insta-kill', '--food-drop', '2'],
 ];
 const root = path.join(__dirname, '..');
+const ENGINE = process.env.ENGINE || 'wasm'; // engine checked against the original object-based one
 const run = (engine, args) => JSON.parse(execFileSync('node', [path.join(__dirname, 'headless.js'), '--engine', engine, ...args],
     { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 1 << 26 }).trim().split('\n').pop());
 
 let failed = 0;
 for (const args of cases) {
-    const a = run('object', args), b = run('packed', args);
+    const a = run('object', args), b = run(ENGINE, args);
     const ok = a.hash === b.hash && a.organisms === b.organisms;
     if (!ok) failed++;
     console.log(`${ok ? 'OK  ' : 'FAIL'} ${args.join(' ').padEnd(62)} hash ${a.hash}/${b.hash} orgs ${a.organisms}/${b.organisms}  ` +

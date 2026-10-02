@@ -1,8 +1,9 @@
-// Owns the SimWorld and its run loop. Runs inside a Web Worker (sim.worker.js),
-// or on the main thread as a fallback when workers are unavailable (e.g. the
-// page was opened from file://). All communication is by plain messages.
+// Owns the simulation (the Rust/WebAssembly engine via WasmWorld) and its run
+// loop. Runs inside a Web Worker (sim.worker.js), or on the main thread as a
+// fallback when workers are unavailable. All communication is by plain messages.
 
-const SimWorld = require('./SimWorld');
+const WasmWorld = require('./WasmWorld');
+const loadEngine = require('./loadEngine');
 const Hyperparams = require('../Hyperparameters');
 const WorldConfig = require('../WorldConfig');
 const FossilRecord = require('../Stats/FossilRecord');
@@ -22,6 +23,24 @@ function makeYield() {
 
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
+// Source of a helper thread: instantiates the engine on the shared memory, sets
+// up its own stack and thread-local storage, then waits for work forever.
+const HELPER_SOURCE = `
+self.onmessage = async (e) => {
+    const {module, memory, tid, stack, tls} = e.data;
+    const instance = await WebAssembly.instantiate(module, {env: {memory}});
+    instance.exports.__stack_pointer.value = stack;
+    instance.exports.__wasm_init_tls(tls);
+    self.postMessage('started');
+    instance.exports.eng_helper_main(tid);
+};`;
+
+const MAX_THREADS = 16;
+
+function hardwareThreads() {
+    return (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) || 1;
+}
+
 function createHost(post, options={}) {
     // ms of simulation per slice before checking messages again
     const budget = options.budget || 12;
@@ -35,9 +54,25 @@ function createHost(post, options={}) {
     let ticks_in_window = 0;
     let window_start = now();
     let tps = 0;
+    let engine = null;
+    let helpers = [];
+    let helpers_started = 0;
+    let ready = false;
+    let failed = false;
+    const queue = [];
 
     function tick() {
-        world.update();
+        try {
+            world.update();
+        } catch (e) {
+            // a panic inside the engine; its state can't be trusted afterwards
+            stop();
+            failed = true;
+            const message = world.panicMessage() || String(e && e.message || e);
+            console.error('Simulation engine crashed:', message);
+            post({type: 'fatal', error: message + ' (please reload the page)'});
+            return;
+        }
         ticks_in_window++;
     }
 
@@ -106,20 +141,98 @@ function createHost(post, options={}) {
         return {cols: world.cols, rows: world.rows, cell_size: world.cell_size};
     }
 
+    // threads to use: WorldConfig.threads (0 = auto: one per core, leaving a
+    // core for the page), limited to what this page can do
+    function wantedThreads() {
+        if (!engine || !engine.shared || WorldConfig.engine_mode === 'exact') return 1;
+        const requested = parseInt(WorldConfig.threads) || 0;
+        const auto = Math.max(1, hardwareThreads() - 1);
+        return Math.max(1, Math.min(MAX_THREADS, requested > 0 ? requested : auto));
+    }
+
+    function applyEngineSettings() {
+        if (!world) return;
+        world.setFast(WorldConfig.engine_mode !== 'exact');
+        const wanted = wantedThreads();
+        if (wanted - 1 > helpers.length)
+            startHelpers(wanted - 1);
+        // only helpers that are already waiting can be used (eng_set_threads clamps)
+        engine.instance.exports.eng_set_threads(wanted);
+    }
+
+    function startHelpers(count) {
+        if (typeof Worker === 'undefined') return;
+        const ex = engine.instance.exports;
+        let url;
+        try {
+            url = URL.createObjectURL(new Blob([HELPER_SOURCE], {type: 'text/javascript'}));
+        } catch (e) {
+            return;
+        }
+        while (helpers.length < count) {
+            const tid = helpers.length + 1;
+            let worker;
+            try {
+                worker = new Worker(url);
+            } catch (e) {
+                console.warn('Could not start simulation helper threads', e);
+                return;
+            }
+            const stack = ex.eng_alloc_stack(1 << 20);
+            const tls = ex.eng_alloc(ex.__tls_size.value, ex.__tls_align.value);
+            worker.onmessage = () => {
+                helpers_started++;
+                waitForHelpers();
+            };
+            worker.onerror = (e) => console.warn('Simulation helper thread failed', e.message || e);
+            worker.postMessage({module: engine.module, memory: engine.memory, tid, stack, tls});
+            helpers.push(worker);
+        }
+    }
+
+    // a helper reports 'started' just before it parks itself in the engine;
+    // re-apply the thread count once it has registered
+    function waitForHelpers() {
+        const ex = engine.instance.exports;
+        if (ex.eng_registered_helpers() >= helpers_started)
+            ex.eng_set_threads(wantedThreads());
+        else
+            setTimeout(waitForHelpers, 5);
+    }
+
+    function engineInfo() {
+        const ex = engine.instance.exports;
+        return {
+            mode: WorldConfig.engine_mode === 'exact' ? 'exact' : 'fast',
+            threads: WorldConfig.engine_mode === 'exact' ? 1 : Math.min(wantedThreads(), ex.eng_registered_helpers() + 1),
+            shared: engine.shared,
+            cores: hardwareThreads(),
+        };
+    }
+
     const handlers = {
-        init(msg) {
+        async init(msg) {
             Object.assign(Hyperparams, msg.hyper);
             Object.assign(WorldConfig, msg.config);
-            world = new SimWorld(msg.cols, msg.rows, msg.cell_size);
+            engine = await loadEngine();
+            world = new WasmWorld(engine.instance, engine.memory, msg.cols, msg.rows, msg.cell_size);
             world.onExtinct = () => {
                 stop();
                 post({type: 'extinct'});
             };
+            applyEngineSettings();
             world.OriginOfLife();
         },
-        hyper(msg) { Object.assign(Hyperparams, msg.values); },
-        config(msg) { Object.assign(WorldConfig, msg.values); },
-        start(msg) { start(msg.fps); },
+        hyper(msg) {
+            Object.assign(Hyperparams, msg.values);
+            world.syncParams();
+        },
+        config(msg) {
+            Object.assign(WorldConfig, msg.values);
+            world.syncParams();
+            applyEngineSettings();
+        },
+        start(msg) { if (!failed) start(msg.fps); },
         stop() { stop(); },
         frame(msg) {
             const reply = {type: 'frame', grid: null, highlight: null, record: null, ...sizeInfo()};
@@ -134,9 +247,13 @@ function createHost(post, options={}) {
                 reply.record = record();
             reply.stats = world.stats();
             reply.stats.tps = measureTps();
+            reply.stats.engine = engineInfo();
             post(reply, transfer);
         },
-        reset(msg) { world.reset(msg.life); },
+        reset(msg) {
+            world.syncParams();
+            world.reset(msg.life);
+        },
         resize(msg) { world.resize(msg.cols, msg.rows, msg.cell_size); },
         brush(msg) { world.dropCellType(msg.c, msg.r, msg.size, msg.state, msg.kill, msg.ignore); },
         kill(msg) { world.killNear(msg.c, msg.r, msg.size); },
@@ -155,8 +272,8 @@ function createHost(post, options={}) {
                 FossilRecord.changeSpeciesName(species, msg.name);
         },
         select(msg) {
-            const org = world.findNearOrganism(msg.c, msg.r, msg.size);
-            return {org: org ? world.serializeOrg(org) : null};
+            const slot = world.findNearOrganism(msg.c, msg.r, msg.size);
+            return {org: slot === null ? null : world.serializeSlot(slot)};
         },
         save() {
             return {json: JSON.stringify(world.serialize())};
@@ -168,7 +285,7 @@ function createHost(post, options={}) {
         },
     };
 
-    return function handle(msg) {
+    function dispatch(msg) {
         const handler = handlers[msg.type];
         if (!handler) {
             console.warn('Unknown simulation message', msg.type);
@@ -185,6 +302,25 @@ function createHost(post, options={}) {
         }
         if (msg.req !== undefined)
             post({type: 'reply', req: msg.req, ...(result || {})});
+    }
+
+    // Messages that arrive while the engine is still loading wait in a queue.
+    return function handle(msg) {
+        if (msg.type === 'init') {
+            handlers.init(msg).then(() => {
+                ready = true;
+                while (queue.length) dispatch(queue.shift());
+            }, (e) => {
+                console.error('Failed to start the simulation engine', e);
+                post({type: 'fatal', error: String(e && e.message || e)});
+            });
+            return;
+        }
+        if (!ready) {
+            queue.push(msg);
+            return;
+        }
+        dispatch(msg);
     };
 }
 
