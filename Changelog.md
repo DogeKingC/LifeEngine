@@ -52,6 +52,8 @@
 
 ### New Content:
 - Organisms: Ghost (camouflaged, self-healing predator), Cactus (leaf plant with spikes), Hornet (fast poisonous predator)
+- Organism: Apex, a predator found by an evolutionary search in the simulation itself; in a free-for-all with every
+  natural predator preset (no mutation, 6 seeds) it ended with the largest population in 5 of 6 runs
 - Organisms: Thornbush, Coral (plants), Grazer (food-seeking herbivore), Shark (eyed predator)
 - World: Food Chain (plants, grazers and sharks in three wall-separated regions)
 
